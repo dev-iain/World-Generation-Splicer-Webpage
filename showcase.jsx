@@ -1619,7 +1619,7 @@ function Viewer({ data }) {
           <span className="version-badge">v{data.meta.modVersion}</span>
           <button className="btn" onClick={loadDifferent} title="Return to upload page">Load different data</button>
           <ThemeToggle />
-          <a className="btn primary" href="https://github.com/AlmanaX-21/OreSource" target="_blank" rel="noopener noreferrer">
+          <a className="btn primary" href="https://github.com/Almana-mc/World-Generation-Splicer-Webpage" target="_blank" rel="noopener noreferrer">
             <GithubIcon /> View on GitHub
           </a>
         </div>
@@ -1826,8 +1826,8 @@ function Viewer({ data }) {
           {data.meta.statsDate && <span className="pill">Stats {data.meta.statsDate}</span>}
         </div>
         <div>
-          <a href="https://github.com/AlmanaX-21/OreSource" target="_blank" rel="noopener noreferrer">
-            <GithubIcon /> github.com/AlmanaX-21/OreSource
+          <a href="https://github.com/Almana-mc/World-Generation-Splicer-Webpage" target="_blank" rel="noopener noreferrer">
+            <GithubIcon /> github.com/Almana-mc/World-Generation-Splicer-Webpage
           </a>
         </div>
       </footer>
