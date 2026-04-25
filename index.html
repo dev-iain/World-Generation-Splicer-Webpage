@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OreSource - Load Data</title>
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="OreSource" />
+  <meta property="og:title" content="OreSource - Quarries and more" />
+  <meta property="og:description" content="Interactive ore distribution viewer. Drop a JSON export from /orestats and explore density, distribution, and spawn ranges." />
+  <meta property="og:url" content="https://almanax-21.github.io/OreSource/" />
+  <meta property="og:image" content="https://almanax-21.github.io/OreSource/embed/og-default.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="OreSource - Quarries and more" />
+  <meta name="twitter:description" content="Interactive ore distribution viewer. Drop a JSON export from /orestats and explore density, distribution, and spawn ranges." />
+  <meta name="twitter:image" content="https://almanax-21.github.io/OreSource/embed/og-default.png" />
+  <meta name="theme-color" content="#0f172a" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="showcase.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="hero" role="banner">
+      <div class="hero-brand">
+        <div class="logo-mark" aria-hidden="true">
+          <span style="background:#4DD0E1"></span>
+          <span style="background:#D7CCC8"></span>
+          <span style="background:#FFD54F"></span>
+          <span style="background:#FF7043"></span>
+          <span style="background:#E53935"></span>
+          <span style="background:#66BB6A"></span>
+          <span style="background:#1E88E5"></span>
+          <span style="background:#424242"></span>
+          <span style="background:#B0BEC5"></span>
+        </div>
+        <div class="hero-title">
+          <div class="hero-name">OreSource</div>
+          <div class="hero-tag">Quarries and more - interactive ore distribution viewer</div>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+        <a class="btn primary" href="https://github.com/AlmanaX-21/OreSource" target="_blank" rel="noopener noreferrer">
+          <svg class="ic" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 012-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </header>
+
+    <div id="err" class="err" style="display:none;margin-top:18px"></div>
+
+    <section class="featured-panel" aria-label="Featured modpacks">
+      <div class="featured-head">
+        <div>
+          <h2>Featured modpacks</h2>
+          <p>Open maintained datasets directly from the website.</p>
+        </div>
+      </div>
+      <div id="modpack-list" class="modpack-list"></div>
+    </section>
+
+    <section class="home-main" aria-label="Load ore data">
+      <article class="home-card">
+        <h2>Upload exported JSON</h2>
+        <p>Drop a file exported by <span class="kbd">/orestats export</span> - look for <span class="mono">oresource-stats-*.json</span> in your server's <span class="mono">oresource_exports/</span> folder.</p>
+        <label id="drop" class="drop" tabindex="0" role="button" aria-label="Drop JSON file here or click to browse">
+          <b>Drop .json here</b>
+          <span>or click to browse</span>
+          <input id="file" type="file" accept="application/json,.json" />
+        </label>
+        <div class="home-actions">
+          <button id="sample" class="btn" type="button">Try sample data</button>
+        </div>
+        <div class="hint">Data stays in your browser. Nothing is uploaded anywhere.</div>
+      </article>
+
+      <article class="home-card">
+        <h2>Or paste JSON directly</h2>
+        <p>Paste the contents of <span class="mono">oresource-stats-*.json</span> below, then hit Load.</p>
+        <textarea id="paste" class="paste-area mono" placeholder='{"meta":{...},"dimensions":{"overworld":{...}}}' spellcheck="false"></textarea>
+        <div class="home-actions">
+          <button id="load" class="btn primary" type="button">Load pasted JSON</button>
+          <button id="clear" class="btn" type="button">Clear</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="schema-panel">
+      <h3>JSON schema (what the viewer expects)</h3>
+<pre>{
+  "meta": { "modVersion": "1.0.0", "mcVersion": "1.21.1", "loader": "NeoForge" },
+  "dimensions": {
+    "overworld": {
+      "id": "minecraft:overworld", "label": "Overworld",
+      "minY": -64, "maxY": 319,
+      "chunksScanned": 1024, "blocksScanned": 16777216,
+      "ores": [
+        {
+          "id": "minecraft:diamond_ore", "label": "diamond", "color": "#4DD0E1",
+          "minY": -64, "maxY": 16,
+          "counts": [...], "percentages": [...], "normalized": [...],
+          "ranges": [{ "minY": -64, "maxY": 16 }],
+          "perChunk": 0.42, "totalCount": 520
+        }
+      ]
+    }
+  }
+}</pre>
+    </section>
+
+    <footer class="footer" role="contentinfo">
+      <div><strong style="color:var(--ink)">OreSource</strong> <span class="fmono" style="margin-left:10px">- Quarries and more</span></div>
+      <div><a href="https://github.com/AlmanaX-21/OreSource" target="_blank" rel="noopener noreferrer">github.com/AlmanaX-21/OreSource</a></div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

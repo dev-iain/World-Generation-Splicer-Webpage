@@ -1,0 +1,31 @@
+{
+  "modpacks": [
+    {
+      "id": "vanilla-sample",
+      "name": "Vanilla Sample",
+      "description": "Example hosted dataset using the bundled OreSource sample export.",
+      "minecraftVersion": "1.21.1",
+      "loader": "NeoForge",
+      "statsDate": "2026-04-24",
+      "dataPath": "sample.json"
+    },
+    {
+      "id": "atm10",
+      "name": "All The Mods 10",
+      "description": "Hosted OreSource export for All The Mods 10.",
+      "minecraftVersion": "1.21.1",
+      "loader": "NeoForge",
+      "statsDate": "2026-04-25",
+      "dataPath": "modpacks/atm10.json"
+    },
+    {
+      "id": "atm-mons",
+      "name": "All The Mons",
+      "description": "Hosted OreSource export for All The Mons.",
+      "minecraftVersion": "1.21.1",
+      "loader": "NeoForge",
+      "statsDate": "2026-04-25",
+      "dataPath": "modpacks/atm-mons.json"
+    }
+  ]
+}
