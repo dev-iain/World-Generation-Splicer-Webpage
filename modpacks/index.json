@@ -7,7 +7,8 @@
       "minecraftVersion": "1.21.1",
       "loader": "NeoForge",
       "statsDate": "2026-04-24",
-      "dataPath": "sample.json"
+      "dataPath": "sample.json",
+      "image": "embed/og-default.png"
     },
     {
       "id": "atm10",
@@ -16,7 +17,8 @@
       "minecraftVersion": "1.21.1",
       "loader": "NeoForge",
       "statsDate": "2026-04-25",
-      "dataPath": "modpacks/atm10.json"
+      "dataPath": "modpacks/atm10.json",
+      "image": "embed/atm10.png"
     },
     {
       "id": "atm-mons",
@@ -25,7 +27,8 @@
       "minecraftVersion": "1.21.1",
       "loader": "NeoForge",
       "statsDate": "2026-04-25",
-      "dataPath": "modpacks/atm-mons.json"
+      "dataPath": "modpacks/atm-mons.json",
+      "image": "embed/atm-mons.png"
     }
   ]
 }

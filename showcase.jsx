@@ -1426,6 +1426,28 @@ function applyPackMeta(data, pack) {
   };
 }
 
+function setMeta(selector, value) {
+  const el = document.querySelector(selector);
+  if (el) el.setAttribute("content", value);
+}
+
+function applyDocumentMeta(pack) {
+  const title = pack.name + " - World Generation Splicer ore stats";
+  const description = pack.description || "Hosted OreSource export for " + pack.name + ". Interactive ore distribution viewer.";
+  const url = window.location.href;
+  const image = pack.image ? new URL(pack.image, window.location.href).href : null;
+  document.title = title;
+  setMeta('meta[property="og:title"]', title);
+  setMeta('meta[property="og:description"]', description);
+  setMeta('meta[property="og:url"]', url);
+  setMeta('meta[name="twitter:title"]', title);
+  setMeta('meta[name="twitter:description"]', description);
+  if (image) {
+    setMeta('meta[property="og:image"]', image);
+    setMeta('meta[name="twitter:image"]', image);
+  }
+}
+
 async function loadLinkedPack(packId) {
   const manifestRes = await fetch("modpacks/index.json", { cache: "no-store" });
   if (!manifestRes.ok) throw new Error("Could not load modpack list");
@@ -1433,6 +1455,7 @@ async function loadLinkedPack(packId) {
   const packs = Array.isArray(manifest.modpacks) ? manifest.modpacks : [];
   const pack = packs.find(p => p.id === packId);
   if (!pack) throw new Error("Unknown modpack link");
+  applyDocumentMeta(pack);
   const dataRes = await fetch(pack.dataPath, { cache: "no-store" });
   if (!dataRes.ok) throw new Error("Could not load " + pack.name + " stats");
   return applyPackMeta(await dataRes.json(), pack);

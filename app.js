@@ -57,7 +57,7 @@
     desc.textContent = pack.description || "";
     const action = document.createElement("a");
     action.className = "btn primary";
-    action.href = pack.id + ".html";
+    action.href = "showcase.html?pack=" + encodeURIComponent(pack.id);
     action.textContent = "Open stats";
     card.append(title, meta, desc, action);
     return card;
