@@ -1447,6 +1447,59 @@ function loadAppData() {
   return Promise.resolve(loadStoredData());
 }
 
+const GRAPH_SHORT = { density: "d", distribution: "x", range: "r", optimize: "o" };
+const GRAPH_LONG = { d: "density", x: "distribution", r: "range", o: "optimize" };
+const MODE_SHORT = { percentage: "p", normalized: "n" };
+const MODE_LONG = { p: "percentage", n: "normalized" };
+const SCORE_SHORT = { percentage: "p", "per-chunk": "c" };
+const SCORE_LONG = { p: "percentage", c: "per-chunk" };
+
+function readHashParams() {
+  if (typeof window === "undefined") return new URLSearchParams();
+  return new URLSearchParams(window.location.hash.replace(/^#/, ""));
+}
+
+function decodeHidden(str) {
+  if (!str) return {};
+  const out = {};
+  for (const id of str.split(",")) {
+    if (id) out[id] = true;
+  }
+  return out;
+}
+
+function decodeSelected(str) {
+  if (!str) return {};
+  const out = {};
+  for (const part of str.split(",")) {
+    if (!part) continue;
+    const idx = part.lastIndexOf(":");
+    if (idx <= 0) continue;
+    const id = part.slice(0, idx);
+    const w = parseFloat(part.slice(idx + 1));
+    if (id && Number.isFinite(w)) out[id] = w;
+  }
+  return out;
+}
+
+function encodeViewState(s, dimIds, oresById) {
+  const p = new URLSearchParams();
+  if (s.dimId && dimIds.includes(s.dimId) && s.dimId !== dimIds[0]) p.set("d", s.dimId);
+  if (s.graphStyle && s.graphStyle !== "density") p.set("g", GRAPH_SHORT[s.graphStyle] || s.graphStyle);
+  if (s.mode && s.mode !== "percentage") p.set("m", MODE_SHORT[s.mode] || s.mode);
+  if (s.merged) p.set("mg", "1");
+  if (s.scoreMode && s.scoreMode !== "percentage") p.set("sm", SCORE_SHORT[s.scoreMode] || s.scoreMode);
+  if (s.showDeriv) p.set("sd", "1");
+  if (s.pieY != null) p.set("py", String(s.pieY));
+  if (s.solo && oresById[s.solo]) p.set("s", s.solo);
+  const hiddenIds = Object.keys(s.hidden || {}).filter(id => s.hidden[id] && oresById[id]);
+  if (hiddenIds.length) p.set("h", hiddenIds.join(","));
+  const selEntries = Object.entries(s.selected || {}).filter(([id]) => oresById[id]);
+  if (selEntries.length) p.set("w", selEntries.map(([id, w]) => `${id}:${w}`).join(","));
+  if (s.oreSearch) p.set("q", s.oreSearch);
+  return p;
+}
+
 function loadDifferent() {
   sessionStorage.removeItem("oresource-data");
   window.location.href = "index.html";
@@ -1498,26 +1551,62 @@ function ShellMessage({ title, text, showButton }) {
 function Viewer({ data }) {
   if (!data.meta) data.meta = { modVersion: "?", mcVersion: "?", loader: "NeoForge" };
   const dimIds = Object.keys(data.dimensions);
-  const [dimId, setDimId] = useState(dimIds[0]);
-  const [mode, setMode] = useState("percentage");
-  const [graphStyle, setGraphStyle] = useState("density");
-  const [merged, setMerged] = useState(false);
+  const hashParams = useMemo(() => readHashParams(), []);
+  const initialDim = (() => {
+    const d = hashParams.get("d");
+    return d && dimIds.includes(d) ? d : dimIds[0];
+  })();
+  const [dimId, setDimId] = useState(initialDim);
+  const [mode, setMode] = useState(() => MODE_LONG[hashParams.get("m")] || "percentage");
+  const [graphStyle, setGraphStyle] = useState(() => GRAPH_LONG[hashParams.get("g")] || "density");
+  const [merged, setMerged] = useState(() => hashParams.get("mg") === "1");
   const dim = data.dimensions[dimId];
   const baseOres = useMemo(() => visibleOreData(dim, (dim.ores || []).map(ensureOreFields)), [dim]);
   const ores = useMemo(() => merged ? mergeOreVariants(baseOres) : baseOres, [baseOres, merged]);
   const oresById = useMemo(() => Object.fromEntries(ores.map(o => [o.id, o])), [ores]);
 
-  const [hidden, setHidden] = useState({});
-  const [solo, setSolo] = useState(null);
-  const [selected, setSelected] = useState({});
-  const [scoreMode, setScoreMode] = useState("percentage");
-  const [pieY, setPieY] = useState(null);
-  const [showDeriv, setShowDeriv] = useState(false);
-  const [oreSearch, setOreSearch] = useState("");
+  const [hidden, setHidden] = useState(() => decodeHidden(hashParams.get("h")));
+  const [solo, setSolo] = useState(() => hashParams.get("s") || null);
+  const [selected, setSelected] = useState(() => decodeSelected(hashParams.get("w")));
+  const [scoreMode, setScoreMode] = useState(() => SCORE_LONG[hashParams.get("sm")] || "percentage");
+  const [pieY, setPieY] = useState(() => {
+    const v = hashParams.get("py");
+    if (v == null) return null;
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n : null;
+  });
+  const [showDeriv, setShowDeriv] = useState(() => hashParams.get("sd") === "1");
+  const [oreSearch, setOreSearch] = useState(() => hashParams.get("q") || "");
+  const dimMergeMounted = useRef(false);
   useEffect(() => {
+    if (!dimMergeMounted.current) { dimMergeMounted.current = true; return; }
     setHidden({}); setSolo(null);
     setSelected({}); setPieY(null); setOreSearch("");
   }, [dimId, merged]);
+
+  useEffect(() => {
+    const params = encodeViewState(
+      { dimId, mode, graphStyle, merged, hidden, solo, selected, scoreMode, pieY, showDeriv, oreSearch },
+      dimIds, oresById
+    );
+    const qs = params.toString();
+    const next = `${window.location.pathname}${window.location.search}${qs ? "#" + qs : ""}`;
+    window.history.replaceState(null, "", next);
+  }, [dimId, mode, graphStyle, merged, hidden, solo, selected, scoreMode, pieY, showDeriv, oreSearch]);
+
+  const packId = useMemo(() => new URLSearchParams(window.location.search).get("pack"), []);
+  const [copied, setCopied] = useState(false);
+  const shareLink = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt("Copy this link:", url);
+      return;
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const bucketSize = (data.meta && data.meta.bucketSize) || 1;
   const scoreSeries = useMemo(
@@ -1618,6 +1707,16 @@ function Viewer({ data }) {
           {data.meta.modpack && <span className="version-badge">{data.meta.modpack}</span>}
           <span className="version-badge">v{data.meta.modVersion}</span>
           <button className="btn" onClick={loadDifferent} title="Return to upload page">Load different data</button>
+          <button
+            className="btn"
+            onClick={shareLink}
+            disabled={!packId}
+            title={packId
+              ? "Copy a link that opens this exact view"
+              : "Sharing only works for built-in modpack views — custom uploaded data isn't on the web"}
+          >
+            {copied ? "Copied!" : "Share view"}
+          </button>
           <ThemeToggle />
           <a className="btn primary" href="https://github.com/Almana-mc/World-Generation-Splicer-Webpage" target="_blank" rel="noopener noreferrer">
             <GithubIcon /> View on GitHub
