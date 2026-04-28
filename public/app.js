@@ -44,10 +44,10 @@
     window.location.href = "showcase.html";
   }
 
-  function featuredLink(pack) {
+  function featuredLink(pack, index) {
     const card = document.createElement("article");
-    card.className = "modpack-card";
-    const title = document.createElement("div");
+    card.className = index === 0 ? "modpack-card spotlight" : "modpack-card";
+    const title = document.createElement("h3");
     title.className = "modpack-title";
     title.textContent = pack.name;
     const meta = document.createElement("div");
@@ -59,6 +59,7 @@
     action.className = "btn primary";
     action.href = "showcase.html?pack=" + encodeURIComponent(pack.id);
     action.textContent = "Open stats";
+    action.setAttribute("aria-label", "Open ore stats for " + pack.name);
     card.append(title, meta, desc, action);
     return card;
   }
@@ -70,7 +71,7 @@
       if (!res.ok) throw new Error("HTTP " + res.status);
       const manifest = await res.json();
       const packs = Array.isArray(manifest.modpacks) ? manifest.modpacks : [];
-      modpackList.replaceChildren(...packs.map(featuredLink));
+      modpackList.replaceChildren(...packs.map((p, i) => featuredLink(p, i)));
       if (!packs.length) modpackList.closest(".featured-panel").style.display = "none";
     } catch (e) {
       modpackList.closest(".featured-panel").style.display = "none";

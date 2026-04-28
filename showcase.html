@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>World Generation Splicer - Viewer</title>
+  <title>OreSource - Viewer</title>
+  <meta name="description" content="Interactive viewer for Minecraft ore distribution: density curves, distribution histograms, Y-level optimizer." />
 
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="World Generation Splicer" />
@@ -19,21 +20,16 @@
   <meta name="twitter:title" content="World Generation Splicer - Quarries and more" />
   <meta name="twitter:description" content="Interactive ore distribution viewer for Minecraft mod stats." />
   <meta name="twitter:image" content="https://almanax-21.github.io/OreSource/embed/og-default.png" />
-  <meta name="theme-color" content="#0f172a" />
+  <meta name="theme-color" content="#f4f6f9" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <script src="theme.js"></script>
-  <link rel="stylesheet" href="showcase.css" />
+  <script src="/theme.js"></script>
 </head>
 <body>
   <div id="root"></div>
-
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
-
-  <script type="text/babel" src="showcase.jsx"></script>
+  <script type="module" src="/showcase.jsx"></script>
 </body>
 </html>
