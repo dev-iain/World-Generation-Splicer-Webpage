@@ -143,7 +143,8 @@ function DensityLine({ ores, hidden, solo, onClick, mode, dim }) {
   const dataMinY = dim.minY, dataMaxY = maxObservedSpawnY(ores, dim.maxY);
   const [view, setView] = useViewport(dataMinY, dataMaxY, `${dim.id}:${dataMaxY}`);
   const [viewMin, viewMax] = view;
-  const fillUnder = visible.length;
+  const [maxShaded, setMaxShaded] = useState(6);
+  const fillUnder = visible.length > 0 && visible.length <= maxShaded;
   const field = mode === "normalized" ? "normalized" : "percentages";
   const singleOre = visible.length === 1 ? visible[0] : null;
 
@@ -181,7 +182,7 @@ function DensityLine({ ores, hidden, solo, onClick, mode, dim }) {
       const idx = y - o.minY;
       const inRange = idx >= 0 && idx < o[field].length && o.ranges.some(r => y >= r.minY && y <= r.maxY);
       if (!inRange) { if (cur) segs.push(cur); cur = ""; continue; }
-      const v = o[field][idx];
+      const v = o[field][idx];const fillUnder = visible.length > 0 && visible.length <= maxShaded;
       const px = xPx(y), py = yPx(v);
       cur += (cur ? " L " : "M ") + px.toFixed(1) + " " + py.toFixed(1);
     }
@@ -238,6 +239,18 @@ function DensityLine({ ores, hidden, solo, onClick, mode, dim }) {
 
   return (
     <div ref={ref} style={{ width: "100%", position: "relative" }}>
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ fontSize: 12, marginRight: 8 }}>
+          Max shaded ores: {maxShaded}
+        </label>
+        <input
+            type="range"
+            min={0}
+            max={ores.length}
+            value={maxShaded}
+            onChange={(e) => setMaxShaded(Number(e.target.value))}
+        />
+      </div>
       <svg className="card-svg" width={w} height={h} role="img" aria-label="Ore density line chart by Y level"
         style={{ cursor: dragRef.current ? "grabbing" : "grab" }}
         onMouseDown={onMouseDownPan}
