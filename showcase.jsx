@@ -143,7 +143,7 @@ function DensityLine({ ores, hidden, solo, onClick, mode, dim }) {
   const dataMinY = dim.minY, dataMaxY = maxObservedSpawnY(ores, dim.maxY);
   const [view, setView] = useViewport(dataMinY, dataMaxY, `${dim.id}:${dataMaxY}`);
   const [viewMin, viewMax] = view;
-  const fillUnder = visible.length <= 6;
+  const fillUnder = visible.length;
   const field = mode === "normalized" ? "normalized" : "percentages";
   const singleOre = visible.length === 1 ? visible[0] : null;
 
