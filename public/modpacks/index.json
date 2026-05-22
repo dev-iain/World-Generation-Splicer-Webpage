@@ -29,6 +29,16 @@
       "statsDate": "2026-04-25",
       "dataPath": "modpacks/atm-mons.json",
       "image": "embed/atm-mons.png"
+    },
+    {
+      "id": "atm11-alpha",
+      "name": "All The Mods 11 - Alpha",
+      "description": "Hosted WGSplicer export for All The Mods 11 Alpha.",
+      "minecraftVersion": "1.21.4",
+      "loader": "NeoForge",
+      "statsDate": "2026-05-22",
+      "dataPath": "modpacks/atm11-alpha.json",
+      "image": "embed/atm11-alpha.png"
     }
   ]
 }
