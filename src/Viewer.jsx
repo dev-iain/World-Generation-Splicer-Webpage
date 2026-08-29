@@ -7,7 +7,7 @@ import DistributionCard from "./components/DistributionCard";
 import RangeCard from "./components/RangeCard";
 import OptimizerCard from "./components/OptimizerCard";
 import { ensureOreFields, mergeOreVariants, visibleOreData } from "./lib/ores";
-import { computePieSlices, computeScoreSeries } from "./lib/score";
+import { computeMineRanges, computePieSlices, computeScoreSeries } from "./lib/score";
 import {
   GRAPH_LONG, MODE_LONG, SCORE_LONG,
   decodeHidden, decodeSelected, encodeViewState, readHashParams,
@@ -42,7 +42,11 @@ export default function Viewer({ data }) {
     const n = parseInt(v, 10);
     return Number.isFinite(n) ? n : null;
   });
-  const [showDeriv, setShowDeriv] = useState(() => hashParams.get("sd") === "1");
+  const [bandKey, setBandKey] = useState(() => {
+    const v = hashParams.get("rb");
+    if (["core", "s1", "s2", "full"].includes(v)) return v;
+    return v === "1" ? "core" : null;
+  });
   const [oreSearch, setOreSearch] = useState(() => hashParams.get("q") || "");
 
   const dimMergeMounted = useRef(false);
@@ -54,13 +58,13 @@ export default function Viewer({ data }) {
 
   useEffect(() => {
     const params = encodeViewState(
-      { dimId, mode, graphStyle, merged, hidden, solo, selected, scoreMode, pieY, showDeriv, oreSearch },
+      { dimId, mode, graphStyle, merged, hidden, solo, selected, scoreMode, pieY, bandKey, oreSearch },
       dimIds, oresById
     );
     const qs = params.toString();
     const next = `${window.location.pathname}${window.location.search}${qs ? "#" + qs : ""}`;
     window.history.replaceState(null, "", next);
-  }, [dimId, mode, graphStyle, merged, hidden, solo, selected, scoreMode, pieY, showDeriv, oreSearch, dimIds, oresById]);
+  }, [dimId, mode, graphStyle, merged, hidden, solo, selected, scoreMode, pieY, bandKey, oreSearch, dimIds, oresById]);
 
   const packId = useMemo(() => new URLSearchParams(window.location.search).get("pack"), []);
   const [copied, setCopied] = useState(false);
@@ -82,6 +86,10 @@ export default function Viewer({ data }) {
     [dim, ores, selected, scoreMode, bucketSize]
   );
   const bestY = scoreSeries.bestY;
+  const mineRanges = useMemo(
+    () => computeMineRanges(scoreSeries, scoreMode),
+    [scoreSeries, scoreMode]
+  );
   const activePieY = pieY != null ? pieY : (bestY != null ? bestY : dim.minY);
   const pieData = useMemo(
     () => computePieSlices(dim, oresById, selected, activePieY, bucketSize),
@@ -115,10 +123,11 @@ export default function Viewer({ data }) {
               ores={ores} oresById={oresById} dim={dim} dimId={dimId}
               selected={selected} setSelected={setSelected}
               scoreMode={scoreMode} setScoreMode={setScoreMode}
-              showDeriv={showDeriv} setShowDeriv={setShowDeriv}
+              bandKey={bandKey} setBandKey={setBandKey}
               pieY={pieY} setPieY={setPieY}
               oreSearch={oreSearch} setOreSearch={setOreSearch}
               scoreSeries={scoreSeries} pieData={pieData} activePieY={activePieY}
+              mineRanges={mineRanges}
               bestY={bestY} bucketSize={bucketSize}
             />
           )}

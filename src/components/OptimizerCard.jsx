@@ -9,28 +9,33 @@ function fmtTopRow(score) {
   return score.toFixed(score < 0.01 ? 4 : score < 1 ? 3 : score < 10 ? 2 : 1);
 }
 
+function fmtBandDensity(b) {
+  if (b.isPercentage) return (b.avgDensity * 100).toFixed(b.avgDensity < 0.001 ? 3 : 2) + "%";
+  return b.avgDensity.toFixed(b.avgDensity < 1 ? 3 : b.avgDensity < 10 ? 2 : 1) + " /chunk";
+}
+
 export default function OptimizerCard({
   ores, oresById, dim, dimId,
   selected, setSelected,
   scoreMode, setScoreMode,
-  showDeriv, setShowDeriv,
+  bandKey, setBandKey,
   pieY, setPieY,
   oreSearch, setOreSearch,
   scoreSeries, pieData, activePieY,
-  bestY, bucketSize,
+  bestY, bucketSize, mineRanges,
 }) {
   const cardRef = useRef(null);
 
   const onCsv = () => {
     const ids = Object.keys(selected);
-    const headers = ["y_level", "score", "dscore", ...ids.map(id => `${id}:contrib`)];
+    const headers = ["y_level", "score", ...ids.map(id => `${id}:contrib`)];
     const rows = [headers];
     const chunks = Math.max(1, dim.chunksScanned || 1);
     const blocksAtY = chunks * 256 * (bucketSize || 1);
     const denom = scoreMode === "percentage" ? blocksAtY : chunks;
     for (let y = dim.minY; y <= dim.maxY; y++) {
       const i = y - dim.minY;
-      const row = [y, scoreSeries.score[i].toFixed(6), scoreSeries.dscore[i].toFixed(6)];
+      const row = [y, scoreSeries.score[i].toFixed(6)];
       for (const oreId of ids) {
         const o = oresById[oreId];
         if (!o) { row.push(""); continue; }
@@ -53,17 +58,17 @@ export default function OptimizerCard({
         <div>
           <div className="card-title">Y-Level Optimizer</div>
           <div className="card-sub">
-            Pick ores, set weights — score(Y) = Σ(weight × density). Best Y is the argmax. Pie shows actual block proportions at the selected Y (unweighted).
+            Pick ores and weights to build a combined {scoreMode === "percentage" ? "block-density" : "blocks-per-chunk"} profile over Y. The range table sizes the Y-band an automatic miner should target — trading vertical coverage against how many chunks you can afford. Peak Y is just the single richest layer.
             {bucketSize > 1 && ` Aggregated to ${bucketSize}-block Y buckets.`}
           </div>
         </div>
         <div className="card-actions">
-          <span className="opt-best-badge">Best Y = {bestY != null ? bestY : "—"}</span>
+          <span className="opt-best-badge">Peak Y = {bestY != null ? bestY : "—"}</span>
           <div className="mode-toggle" role="tablist" aria-label="Score mode">
             <button role="tab" aria-selected={scoreMode === "percentage"} className={scoreMode === "percentage" ? "on" : ""} onClick={() => setScoreMode("percentage")}>Percentage</button>
             <button role="tab" aria-selected={scoreMode === "count"} className={scoreMode === "count" ? "on" : ""} onClick={() => setScoreMode("count")}>Count / chunk</button>
           </div>
-          <button className={"mini-btn " + (showDeriv ? "on" : "")} onClick={() => setShowDeriv(d => !d)} title="Toggle d/dY overlay">d/dY</button>
+          <button className={"mini-btn " + (bandKey ? "on" : "")} onClick={() => setBandKey(k => k ? null : "core")} title="Shade a mining band on the chart — pick which one in the range table">σ-band</button>
           <button className="mini-btn" onClick={onPng}><DownloadIcon /> PNG</button>
           <button className="mini-btn" onClick={onCsv}><DownloadIcon /> CSV</button>
         </div>
@@ -90,7 +95,8 @@ export default function OptimizerCard({
               dim={dim}
               scoreSeries={scoreSeries}
               scoreMode={scoreMode}
-              showDeriv={showDeriv}
+              bandKey={bandKey}
+              mineRanges={mineRanges}
               pieY={pieY}
               onPickY={setPieY}
             />
@@ -117,6 +123,38 @@ export default function OptimizerCard({
                       <span className="opt-summary-y">Y = {t.y}</span>
                       <span className="opt-summary-bar"><span style={{ width: (pct * 100).toFixed(1) + "%" }}/></span>
                       <span className="opt-summary-val">{fmt}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        )}
+        {mineRanges && (
+          <div className="opt-ranges">
+            <div className="opt-summary-head">Mining range (by spread)</div>
+            <p className="opt-ranges-note">
+              <b>Yield ×</b> is ore per block excavated, relative to clearing the whole spawn range.
+              A tighter band digs less waste but needs proportionally more chunks (<b>×chunks</b>) to move the same volume of rock.
+              Score-weighted mean Y {Math.round(mineRanges.meanY)}, σ ≈ {mineRanges.sigma.toFixed(1)}.
+              Click a row to outline it on the chart; click it again to clear.
+            </p>
+            <ol>
+              <li className="opt-ranges-row opt-ranges-head">
+                <span>Band</span><span>Y range</span><span>Layers</span>
+                <span>Deposit</span><span>Yield ×</span><span>×chunks</span>
+              </li>
+              {mineRanges.bands.map((b) => {
+                const isOn = bandKey === b.key;
+                return (
+                  <li key={b.key} className={"opt-ranges-row" + (b.key === "core" ? " rec" : "") + (isOn ? " on" : "")}>
+                    <button className="opt-ranges-btn" aria-pressed={isOn} onClick={() => setBandKey(k => k === b.key ? null : b.key)} title={`Avg ${fmtBandDensity(b)} across the band`}>
+                      <span className="opt-ranges-label">{b.label}</span>
+                      <span className="opt-ranges-y">{b.lo} – {b.hi}</span>
+                      <span className="opt-ranges-n">{b.height}</span>
+                      <span className="opt-ranges-n">{(b.captured * 100).toFixed(0)}%</span>
+                      <span className="opt-ranges-n strong">{b.yield.toFixed(b.yield < 10 ? 1 : 0)}×</span>
+                      <span className="opt-ranges-n">{b.chunkMultiple.toFixed(b.chunkMultiple < 10 ? 1 : 0)}×</span>
                     </button>
                   </li>
                 );

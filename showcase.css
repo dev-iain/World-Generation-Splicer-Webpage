@@ -249,6 +249,28 @@ a{color:inherit}
 .opt-summary-bar span{display:block;height:100%;background:var(--accent);border-radius:3px}
 .opt-summary-val{font-family:var(--font-mono);font-size:11px;color:var(--ink);text-align:right}
 
+.opt-ranges{border-top:1px solid var(--border);padding-top:10px}
+.opt-ranges-note{margin:0 0 8px;font-size:11px;line-height:1.5;color:var(--muted)}
+.opt-ranges-note b{color:var(--ink);font-weight:600}
+.opt-ranges ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.opt-ranges-row{border-radius:6px}
+.opt-ranges-row.on .opt-ranges-btn{background:var(--accent-soft-bg);border-color:var(--accent)}
+.opt-ranges-head{display:grid;grid-template-columns:1.6fr 90px 60px 60px 56px 56px;gap:10px;padding:4px 8px;font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.opt-ranges-head span:not(:first-child){text-align:right}
+.opt-ranges-btn{display:grid;grid-template-columns:1.6fr 90px 60px 60px 56px 56px;gap:10px;align-items:center;padding:6px 8px;border:1px solid transparent;border-radius:6px;background:var(--surface-alt);cursor:pointer;width:100%;font:inherit;color:inherit;text-align:left}
+.opt-ranges-btn:hover{background:var(--surface-hover)}
+.opt-ranges-row.rec .opt-ranges-btn{border-color:var(--accent-soft-border)}
+.opt-ranges-label{font-size:12px;color:var(--ink)}
+.opt-ranges-row.rec .opt-ranges-label{font-weight:700}
+.opt-ranges-y{font-family:var(--font-mono);font-size:12px;color:var(--ink);text-align:right}
+.opt-ranges-n{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:right}
+.opt-ranges-n.strong{color:var(--ink);font-weight:700}
+@media (max-width:640px){
+  .opt-ranges-head{grid-template-columns:1.4fr 78px 44px 46px 46px;}
+  .opt-ranges-btn{grid-template-columns:1.4fr 78px 44px 46px 46px;}
+  .opt-ranges-head span:nth-child(6),.opt-ranges-btn > span:nth-child(6){display:none}
+}
+
 .pie-legend{display:flex;flex-direction:column;gap:2px;width:100%;max-width:360px;padding:0 6px}
 .pie-leg-row{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;font-size:12px;padding:3px 4px;border-radius:4px}
 .pie-leg-row:hover{background:var(--surface-hover)}

@@ -40,7 +40,7 @@ export function encodeViewState(s, dimIds, oresById) {
   if (s.mode && s.mode !== "percentage") p.set("m", MODE_SHORT[s.mode] || s.mode);
   if (s.merged) p.set("mg", "1");
   if (s.scoreMode && s.scoreMode !== "percentage") p.set("sm", SCORE_SHORT[s.scoreMode] || s.scoreMode);
-  if (s.showDeriv) p.set("sd", "1");
+  if (s.bandKey) p.set("rb", s.bandKey);
   if (s.pieY != null) p.set("py", String(s.pieY));
   if (s.solo && oresById[s.solo]) p.set("s", s.solo);
   const hiddenIds = Object.keys(s.hidden || {}).filter(id => s.hidden[id] && oresById[id]);

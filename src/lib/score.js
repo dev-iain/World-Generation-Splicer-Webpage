@@ -2,7 +2,6 @@ export function computeScoreSeries(dim, ores, selected, scoreMode, bucketSize) {
   const yMin = dim.minY, yMax = dim.maxY;
   const len = Math.max(1, yMax - yMin + 1);
   const score = new Array(len).fill(0);
-  const dscore = new Array(len).fill(0);
   const contributors = new Array(len);
   const oresById = Object.fromEntries(ores.map(o => [o.id, o]));
   const chunks = Math.max(1, dim.chunksScanned || 1);
@@ -26,8 +25,6 @@ export function computeScoreSeries(dim, ores, selected, scoreMode, bucketSize) {
       any = true;
     }
   }
-  for (let i = 0; i < len - 1; i++) dscore[i] = score[i + 1] - score[i];
-
   let bestY = null, bestVal = 0;
   const tops = [];
   for (let i = 0; i < len; i++) {
@@ -37,11 +34,87 @@ export function computeScoreSeries(dim, ores, selected, scoreMode, bucketSize) {
   }
   tops.sort((a, b) => b.score - a.score);
   return {
-    score, dscore, contributors,
+    score, contributors,
     bestY: any ? bestY : null,
     topK: tops.slice(0, 5),
     yMin, yMax,
   };
+}
+
+// Treat the score curve as a mass distribution over Y and describe the
+// candidate Y-bands an automatic miner could target. "yield" is ore per
+// block excavated, normalised so that mining the whole spawn range == 1.
+export function computeMineRanges(scoreSeries, scoreMode) {
+  const { score, yMin } = scoreSeries;
+  const len = score.length;
+
+  let total = 0, firstY = null, lastY = null, peak = 0, peakY = null;
+  for (let i = 0; i < len; i++) {
+    const v = score[i];
+    if (v <= 0) continue;
+    total += v;
+    if (firstY == null) firstY = yMin + i;
+    lastY = yMin + i;
+    if (v > peak) { peak = v; peakY = yMin + i; }
+  }
+  if (!total || firstY == null) return null;
+
+  const fullHeight = lastY - firstY + 1;
+  const fullAvg = total / fullHeight;
+
+  let meanY = 0;
+  for (let i = 0; i < len; i++) meanY += (yMin + i) * score[i];
+  meanY /= total;
+  let varY = 0;
+  for (let i = 0; i < len; i++) {
+    const d = (yMin + i) - meanY;
+    varY += d * d * score[i];
+  }
+  const sigma = Math.sqrt(varY / total);
+
+  const clampY = (y) => Math.max(firstY, Math.min(lastY, y));
+  const bandStats = (lo, hi, key, label) => {
+    lo = clampY(lo); hi = clampY(hi);
+    if (hi < lo) hi = lo;
+    let sum = 0;
+    for (let y = lo; y <= hi; y++) {
+      const i = y - yMin;
+      if (i >= 0 && i < len && score[i] > 0) sum += score[i];
+    }
+    const height = hi - lo + 1;
+    const avg = sum / height;
+    return {
+      key, label, lo, hi, height,
+      captured: sum / total,            // share of the deposit inside the band
+      avgDensity: avg,                  // mean score per Y level in the band
+      yield: fullAvg > 0 ? avg / fullAvg : 1,   // ore per excavated block vs full range
+      chunkMultiple: height > 0 ? fullHeight / height : 1, // extra chunks for equal dig volume
+      isPercentage: scoreMode === "percentage",
+    };
+  };
+
+  // Dense core: widest contiguous run around the peak that stays >= 50% of peak.
+  const thr = peak * 0.5;
+  let coreLo = peakY, coreHi = peakY;
+  for (let y = peakY; y >= firstY; y--) {
+    const i = y - yMin;
+    if (i < 0 || i >= len || score[i] < thr) break;
+    coreLo = y;
+  }
+  for (let y = peakY; y <= lastY; y++) {
+    const i = y - yMin;
+    if (i < 0 || i >= len || score[i] < thr) break;
+    coreHi = y;
+  }
+
+  const bands = [
+    bandStats(coreLo, coreHi, "core", "Dense core (>=50% of peak)"),
+    bandStats(Math.round(meanY - sigma), Math.round(meanY + sigma), "s1", "+/-1 sigma"),
+    bandStats(Math.round(meanY - 2 * sigma), Math.round(meanY + 2 * sigma), "s2", "+/-2 sigma"),
+    bandStats(firstY, lastY, "full", "Full spawn range"),
+  ];
+
+  return { meanY, sigma, peak, peakY, firstY, lastY, fullHeight, fullAvg, bands };
 }
 
 export function computePieSlices(dim, oresById, selected, y, bucketSize) {

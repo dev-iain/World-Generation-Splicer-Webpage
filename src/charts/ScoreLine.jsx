@@ -3,7 +3,7 @@ import { niceStep, useViewport, clampView, chartKeyHandler, safeId } from "../li
 import { escapeHtml, safeColor } from "../lib/colors";
 import { showTip, hideTip } from "../lib/tooltip";
 
-function ScoreLine({ dim, scoreSeries, scoreMode, showDeriv, pieY, onPickY }) {
+function ScoreLine({ dim, scoreSeries, scoreMode, bandKey, mineRanges, pieY, onPickY }) {
   const ref = useRef(null);
   const tipRef = useRef(null);
   const dragRef = useRef(null);
@@ -18,12 +18,13 @@ function ScoreLine({ dim, scoreSeries, scoreMode, showDeriv, pieY, onPickY }) {
     return () => window.removeEventListener("resize", on);
   }, []);
 
-  const { score, dscore, contributors, bestY } = scoreSeries;
+  const { score, contributors, bestY } = scoreSeries;
+  const band = bandKey && mineRanges ? mineRanges.bands.find(b => b.key === bandKey) : null;
   const dataMinY = dim.minY, dataMaxY = dim.maxY;
   const [view, setView] = useViewport(dataMinY, dataMaxY, dim.id);
   const [viewMin, viewMax] = view;
 
-  const pad = { top: 18, right: showDeriv ? 56 : 24, bottom: 44, left: 64 };
+  const pad = { top: 18, right: 24, bottom: 44, left: 64 };
   const plotW = Math.max(40, w - pad.left - pad.right);
   const plotH = h - pad.top - pad.bottom;
 
@@ -36,21 +37,8 @@ function ScoreLine({ dim, scoreSeries, scoreMode, showDeriv, pieY, onPickY }) {
   if (scoreMax <= 0) scoreMax = scoreMode === "percentage" ? 0.01 : 1;
   scoreMax *= 1.08;
 
-  let dAbs = 0;
-  if (showDeriv) {
-    for (let y = Math.ceil(viewMin); y <= Math.floor(viewMax); y++) {
-      const i = y - dataMinY;
-      if (i < 0 || i >= dscore.length) continue;
-      const a = Math.abs(dscore[i]);
-      if (a > dAbs) dAbs = a;
-    }
-    if (dAbs <= 0) dAbs = 1;
-    dAbs *= 1.15;
-  }
-
   const xPx = (y) => pad.left + ((y - viewMin) / Math.max(1, viewMax - viewMin)) * plotW;
   const yPxScore = (v) => pad.top + (1 - Math.min(1, v / scoreMax)) * plotH;
-  const yPxDeriv = (v) => pad.top + plotH * 0.5 - (v / dAbs) * plotH * 0.45;
 
   const xStep = niceStep(viewMax - viewMin);
   const xTicks = [];
@@ -72,7 +60,6 @@ function ScoreLine({ dim, scoreSeries, scoreMode, showDeriv, pieY, onPickY }) {
     return d;
   };
   const scorePath = buildPath(score, yPxScore);
-  const derivPath = showDeriv ? buildPath(dscore, yPxDeriv) : "";
 
   useEffect(() => {
     const el = ref.current;
@@ -170,21 +157,26 @@ function ScoreLine({ dim, scoreSeries, scoreMode, showDeriv, pieY, onPickY }) {
           </clipPath>
         </defs>
         <g clipPath={`url(#clip-opt-${safeId(dim.id)})`}>
+          {band && (
+            <g>
+              <rect x={xPx(band.lo - 0.5)} y={pad.top} width={Math.max(0, xPx(band.hi + 0.5) - xPx(band.lo - 0.5))} height={plotH}
+                fill="var(--accent)" opacity="0.12" />
+              <line x1={xPx(band.lo - 0.5)} x2={xPx(band.lo - 0.5)} y1={pad.top} y2={pad.top + plotH} stroke="var(--accent)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+              <line x1={xPx(band.hi + 0.5)} x2={xPx(band.hi + 0.5)} y1={pad.top} y2={pad.top + plotH} stroke="var(--accent)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+              <text x={(xPx(band.lo - 0.5) + xPx(band.hi + 0.5)) / 2} y={pad.top + plotH - 6} textAnchor="middle" fontSize="10" fontFamily="JetBrains Mono, monospace" fontWeight="700" fill="var(--accent)">
+                mine Y {band.lo}–{band.hi} · {band.yield.toFixed(1)}× yield
+              </text>
+            </g>
+          )}
           {scorePath && (
             <path d={scorePath} stroke="var(--accent)" strokeWidth="2.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          )}
-          {showDeriv && (
-            <line x1={pad.left} x2={pad.left + plotW} y1={yPxDeriv(0)} y2={yPxDeriv(0)} stroke="var(--scroll-thumb)" strokeDasharray="3 3" />
-          )}
-          {showDeriv && derivPath && (
-            <path d={derivPath} stroke="var(--danger)" strokeWidth="1.4" fill="none" strokeDasharray="4 3" strokeLinecap="round" strokeLinejoin="round" />
           )}
           {bestY != null && (
             <g>
               <line x1={xPx(bestY)} x2={xPx(bestY)} y1={pad.top} y2={pad.top + plotH} stroke="var(--success)" strokeWidth="1.4" strokeDasharray="2 3"/>
               <circle cx={xPx(bestY)} cy={yPxScore(score[bestY - dataMinY] || 0)} r="4.5" fill="var(--success)" stroke="var(--surface)" strokeWidth="1.5"/>
               <text x={xPx(bestY)} y={pad.top + 14} textAnchor="middle" fontSize="11" fontFamily="JetBrains Mono, monospace" fontWeight="700" fill="var(--success)">
-                Best Y = {bestY}
+                Peak Y = {bestY}
               </text>
             </g>
           )}
@@ -207,11 +199,11 @@ function ScoreLine({ dim, scoreSeries, scoreMode, showDeriv, pieY, onPickY }) {
             const yVal = Math.round(viewMin + relX * (viewMax - viewMin));
             const i = yVal - dataMinY;
             const sVal = (i >= 0 && i < score.length) ? score[i] : 0;
-            const dVal = (i >= 0 && i < dscore.length) ? dscore[i] : 0;
+            const inBand = band && yVal >= band.lo && yVal <= band.hi;
             const rows = (i >= 0 && contributors[i] ? contributors[i] : [])
               .slice().sort((a, b) => b.contrib - a.contrib).slice(0, 5);
-            const html = `<div class="t-y">Y = <b style="color:var(--ink)">${yVal}</b></div>` +
-              `<div class="t-y" style="margin-top:2px">score: <b style="color:var(--ink)">${escapeHtml(fmtScore(sVal))}</b>${showDeriv ? ` &nbsp;d/dY: <b style="color:var(--danger)">${escapeHtml(fmtScore(dVal))}</b>` : ""}</div>` +
+            const html = `<div class="t-y">Y = <b style="color:var(--ink)">${yVal}</b>${inBand ? ` &nbsp;<b style="color:var(--accent)">in mining band</b>` : ""}</div>` +
+              `<div class="t-y" style="margin-top:2px">score: <b style="color:var(--ink)">${escapeHtml(fmtScore(sVal))}</b></div>` +
               (rows.length
                 ? rows.map(r => `<div class="t-head" style="margin-top:4px"><span class="t-sw" style="background:${safeColor(r.color)}"></span><span class="t-lbl">${escapeHtml(r.label)}</span><span class="t-n" style="margin-left:auto">${escapeHtml(fmtScore(r.contrib))}</span></div>`).join("")
                 : `<div class="t-y" style="margin-top:4px">no contributors at this Y</div>`);
@@ -226,11 +218,6 @@ function ScoreLine({ dim, scoreSeries, scoreMode, showDeriv, pieY, onPickY }) {
         <text x={16} y={pad.top + plotH / 2} textAnchor="middle" fontSize="11" fontFamily="Inter, sans-serif" fontWeight="600" fill="var(--text)" transform={`rotate(-90 16 ${pad.top + plotH / 2})`}>
           {scoreMode === "percentage" ? "Combined Density" : "Per-Chunk Count"}
         </text>
-        {showDeriv && (
-          <text x={w - 14} y={pad.top + plotH / 2} textAnchor="middle" fontSize="11" fontFamily="Inter, sans-serif" fontWeight="600" fill="var(--danger)" transform={`rotate(90 ${w - 14} ${pad.top + plotH / 2})`}>
-            d/dY
-          </text>
-        )}
 
         {bestY == null && (
           <text x={w/2} y={h/2} textAnchor="middle" fontSize="12" fill="var(--muted)" fontFamily="JetBrains Mono, monospace">
